@@ -115,7 +115,7 @@ func replacefn(typenamecnt int) func(string) string {
 }
 
 //var casergxp = regexp.MustCompile("(\r|\n\r|\n)[ ]+switch [^.]+.\\(type\\) {(\r|\n\r|\n)[ ]+case [^:]+T:(\r|\n\r|\n).+(\r|\n\r|\n)[ ]+}(\r|\n\r|\n)")
-var casergxp = regexp.MustCompile("(\r|\n\r|\n)[\t ]+case .+T:(\r|\n\r|\n).+(\r|\n\r|\n)[\t ]+(}(\r|\n\r|\n)|case )")
+var casergxp = regexp.MustCompile("(\r|\n\r|\n)[\t ]+case T:(\r|\n\r|\n).+(\r|\n\r|\n)[\t ]+(}(\r|\n\r|\n)|case )")
 
 func replaceCase(v string) string {
 	var rst string
