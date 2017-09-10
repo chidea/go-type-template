@@ -61,52 +61,82 @@ func main() {
 			fmt.Fprintln(os.Stderr, e)
 			os.Exit(1)
 		}
-		code := `// Code generated with github.com/chidea/go-type-template DO NOT EDIT.
-		` + string(b)
+		code := string(b)
 		code = regexp.MustCompile("// \\+build generate(\r|\n\r|\n)").ReplaceAllString(code, "")
 		code = regexp.MustCompile("//[ ]?go:generate [^\n\r]+(\r|\n\r|\n)").ReplaceAllString(code, "")
-		trgxp := regexp.MustCompile("(]T[ ,){\r\n(]|[( ]T\\)|\\(T,| T,)")
 		varrgxp := regexp.MustCompile("var .+_T_ = .+_T_")
 		funcblockrgxp := regexp.MustCompile("\nfunc [^(]+_T_\\(.+\\)[^}]+{\r?\n([^}].+(\r|\n\r|\n))+}(\r|\n\r|\n)")
-		replacefn := func(typenamecnt int) func(string) string {
-			return func(v string) string {
-				var rst string
-				if debug {
-					fmt.Fprintln(os.Stderr, "found code:")
-					fmt.Fprintln(os.Stderr, v)
-					//log.Println("found code:")
-					//log.Println(v)
-				}
-				for i, t := range os.Args {
-					appendum := v[0:]
-					typename := strings.ToUpper(string(t[0])) + t[1:]
-					if t == "string" {
-						typename = typename[:3]
-					} else {
-					}
-					appendum = strings.Replace(appendum, "_T_", typename, typenamecnt)
-					appendum = trgxp.ReplaceAllStringFunc(appendum, func(v string) string {
-						v = string(v[0]) + t + string(v[len(v)-1])
-						return v
-					})
-					if i > 0 {
-						rst += "\n"
-					}
-					if debug {
-						fmt.Fprintf(os.Stderr, "replaced T to %s:\n%s", t, appendum)
-						//log.Printf("replaced T to %s:\n%s", t, appendum)
-					}
-					rst += appendum
-				}
-				return rst
-			}
-		}
 		code = varrgxp.ReplaceAllStringFunc(code, replacefn(2))
+		code = casergxp.ReplaceAllStringFunc(code, replaceCase)
 		code = funcblockrgxp.ReplaceAllStringFunc(code, replacefn(1))
+		code = `// Code generated with github.com/chidea/go-type-template DO NOT EDIT.
+		` + code
 		if strings.HasSuffix(file, "_generate.go") {
 			ioutil.WriteFile(file[:len(file)-12]+".go", []byte(code), 733)
 		} else {
 			ioutil.WriteFile(file[:len(file)-3]+"-generated.go", []byte(code), 733)
 		}
 	}
+}
+func typeNameRule(typename string) string {
+	rst := strings.ToUpper(string(t[0])) + t[1:]
+	if typename == "string" {
+		rst = rst[:3]
+	}
+	return rst
+}
+
+var trgxp = regexp.MustCompile("(]T[ ,){\r\n(]|[( ]T\\)|\\(T,| T,)")
+
+func replacefn(typenamecnt int) func(string) string {
+	return func(v string) string {
+		var rst string
+		if debug {
+			fmt.Fprintf(os.Stderr, "found function:\n%s", v)
+			//log.Println("found code:")
+			//log.Println(v)
+		}
+		for i, t := range os.Args {
+			appendum := v[0:]
+			typename := typeNameRule(t)
+			appendum = strings.Replace(appendum, "_T_", typename, typenamecnt)
+			appendum = trgxp.ReplaceAllStringFunc(appendum, templateReplace)
+			if i > 0 {
+				rst += "\n"
+			}
+			if debug {
+				fmt.Fprintf(os.Stderr, "replaced T to %s:\n%s", t, appendum)
+				//log.Printf("replaced T to %s:\n%s", t, appendum)
+			}
+			rst += appendum
+		}
+		return rst
+	}
+}
+
+//var casergxp = regexp.MustCompile("(\r|\n\r|\n)[ ]+switch [^.]+.\\(type\\) {(\r|\n\r|\n)[ ]+case [^:]+T:(\r|\n\r|\n).+(\r|\n\r|\n)[ ]+}(\r|\n\r|\n)")
+var casergxp = regexp.MustCompile("(\r|\n\r|\n)[\t ]+case .+T:(\r|\n\r|\n).+(\r|\n\r|\n)[\t ]+(}(\r|\n\r|\n)|case )")
+
+func replaceCase(v string) string {
+	var rst string
+	if debug {
+		fmt.Fprintf(os.Stderr, "found case:\n%s", v)
+	}
+	for i, t := range os.Args {
+		appendum := v[0:]
+		typename := typeNameRule(t)
+		appendum = strings.Replace(appendum, "_T_", typename, -1)
+		appendum = trgxp.ReplaceAllStringFunc(appendum, templateReplace)
+		if debug {
+			fmt.Fprintf(os.Stderr, "replaced T to %s:\n%s", t, appendum)
+		}
+		if i > 0 {
+			rst += "\n"
+		}
+		rst += appendum
+	}
+}
+
+func templateReplace(v string) string {
+	return string(v[0]) + t + string(v[len(v)-1])
 }
