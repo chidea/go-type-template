@@ -67,7 +67,7 @@ func main() {
 		varrgxp := regexp.MustCompile("var .+_T_ = .+_T_")
 		casergxp := regexp.MustCompile("(\r|\n\r|\n)[\t ]+case T:([\r\n\t ]+[^\r\n]+)*?[\r\n\t ]+(}(\r|\n\r|\n| |//|/*)|case )")
 		code = casergxp.ReplaceAllStringFunc(code, replaceCase())
-		trgxp := regexp.MustCompile("(]T[ ,){\r\n(]|[( ]T\\)|\\(T,| T,)")
+		trgxp := regexp.MustCompile("(]T[ ,){\r\n(]|[( ]T\\)|\\(T,| T,| T )")
 		code = varrgxp.ReplaceAllStringFunc(code, replacefn("var", 2, trgxp))
 		funcblockrgxp := regexp.MustCompile("\nfunc [^(]+_T_\\(.+\\)[^}]+{(\r|\n\r|\n)([^}].+(\r|\n\r|\n))+}(\r|\n\r|\n)")
 		code = funcblockrgxp.ReplaceAllStringFunc(code, replacefn("function", 1, trgxp))
